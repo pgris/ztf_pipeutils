@@ -5,7 +5,7 @@ import astropy.units as u
 import astropy
 import numpy as np
 import simsurvey
-import simsurvey_tools as sst
+import ztf_pipeutils.simsurvey_tools as sst
 import matplotlib.pylab as plt
 import pandas as pd
 import os
