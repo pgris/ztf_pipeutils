@@ -49,7 +49,7 @@ class Write_LightCurve:
         self.file_data = h5py.File('{}'.format(self.data_file), 'w')
         self.file_meta = h5py.File('{}'.format(self.meta_file), 'w')
 
-    def write_data(self, lc, meta_rejected, path='SN', serialize_meta=True):
+    def write_data(self, lc, meta_rejected, add_meta={}, path='', serialize_meta=True):
         """
         Parameters
         ----------
@@ -59,26 +59,31 @@ class Write_LightCurve:
             List of AstropyTable with simulated lightcurve.
         """
         if isinstance(lc, astropy.table.table.Table):
-            meta = lc.meta
-            lc.meta = dict(zip(self.List, [meta[k] for k in self.List]))
+            if lc.meta is not None:
+                meta = lc.meta
+                lc.meta = dict(zip(self.List, [meta[k] for k in self.List]))
 
-            astropy.io.misc.hdf5.write_table_hdf5(
-                lc, self.file_data, path=path, overwrite=True, serialize_meta=serialize_meta)
+                if add_meta:
+                    for key, vals in add_meta.items():
+                        lc.meta[key] = vals
 
-            meta = dict(
-                zip(lc.meta.keys(), [[lc.meta[k]] for k in lc.meta.keys()]))
-            meta['path'] = [path]
-            self.Summary = vstack([self.Summary, Table(meta)])
+                astropy.io.misc.hdf5.write_table_hdf5(
+                    lc, self.file_data, path=path, overwrite=True, serialize_meta=serialize_meta)
+
+                meta = dict(
+                    zip(lc.meta.keys(), [[lc.meta[k]] for k in lc.meta.keys()]))
+                meta['path'] = [path]
+                self.Summary = vstack([self.Summary, Table(meta)])
 
         else:
-            print('lc is not an astropy.table.table.Table type', type(lc))
+            #print('lc is not an astropy.table.table.Table type', type(lc))
             for i, lc_b in enumerate(lc):
-                path = '{}_{}'.format(self.path_prefix, i)
-                self.write_data(lc_b, None, path)
+                simpath = '{}{}_{}'.format(self.path_prefix, path, i)
+                self.write_data(lc_b, None, add_meta, simpath)
 
-            self.write_meta(meta_rejected)
+            self.write_meta(meta_rejected, add_meta, path)
 
-    def write_meta(self, meta_rej):
+    def write_meta(self, meta_rej, add_meta={}, path=''):
         """
         write meta data in hdf5 file
 
@@ -90,9 +95,15 @@ class Write_LightCurve:
         """
         if meta_rej is not None and len(meta_rej) > 0:
             meta_rej = Table(meta_rej)
-            pp = ['bad_{}'.format(i) for i in range(len(meta_rej))]
+            pp = ['bad{}_{}'.format(path, i) for i in range(len(meta_rej))]
             col = Column(pp, name='path')  # shape=(2,)
             meta_rej.add_column(col)
+            if add_meta:
+                for key, vals in add_meta.items():
+                    pp = [vals]*len(meta_rej)
+                    col = Column(pp, name=key)  # shape=(2,)
+                    meta_rej.add_column(col)
+
             self.Summary = vstack([self.Summary, meta_rej])
 
         self.Summary.meta["directory"] = self.outputDir
