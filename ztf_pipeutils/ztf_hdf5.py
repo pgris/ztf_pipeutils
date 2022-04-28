@@ -49,41 +49,53 @@ class Write_LightCurve:
         self.file_data = h5py.File('{}'.format(self.data_file), 'w')
         self.file_meta = h5py.File('{}'.format(self.meta_file), 'w')
 
-    def write_data(self, lc, meta_rejected, add_meta={}, path='', serialize_meta=True):
+    def write_data(self, lc, meta, meta_rejected, path='', serialize_meta=True):
         """
         Parameters
         ----------
+         lc : LightcurveCollection
+            List of AstropyTable with simulated lightcurve.
+        metadata: numpy array
+           metadata for lc
         path : str-
             Name of the key of the data file that you want to write.
-        lc : LightcurveCollection
-            List of AstropyTable with simulated lightcurve.
+
         """
         if isinstance(lc, astropy.table.table.Table):
-            if lc.meta is not None:
-                meta = lc.meta
-                lc.meta = dict(zip(self.List, [meta[k] for k in self.List]))
 
-                if add_meta:
-                    for key, vals in add_meta.items():
-                        lc.meta[key] = vals
-
-                astropy.io.misc.hdf5.write_table_hdf5(
-                    lc, self.file_data, path=path, overwrite=True, serialize_meta=serialize_meta)
-
-                meta = dict(
-                    zip(lc.meta.keys(), [[lc.meta[k]] for k in lc.meta.keys()]))
-                meta['path'] = [path]
-                self.Summary = vstack([self.Summary, Table(meta)])
-
+            # update metadata with path
+            metadict = {name: meta[name] for name in meta.dtype.names}
+            metadict['path'] = path
+            self.Summary = vstack([self.Summary, Table([metadict])])
+            # write lc
+            lc.meta = metadict
+            astropy.io.misc.hdf5.write_table_hdf5(
+                lc, self.file_data, path=path, overwrite=True, serialize_meta=serialize_meta)
         else:
             #print('lc is not an astropy.table.table.Table type', type(lc))
-            for i, lc_b in enumerate(lc):
-                simpath = '{}{}_{}'.format(self.path_prefix, path, i)
-                self.write_data(lc_b, None, add_meta, simpath)
+            inum = -1
+            meta_rej = None
+            for j, llc in enumerate(lc):
+                if llc.meta is not None:
+                    for i, lc_b in enumerate(llc):
+                        if len(lc_b) > 0:
+                            inum += 1
+                            simpath = '{}{}_{}'.format(
+                                self.path_prefix, path, inum)
+                            self.write_data(
+                                lc_b, meta[j][i], None, simpath)
+                    pp = None
+                    if meta_rejected is not None:
+                        pp = meta_rejected[j]
+                    if pp is not None:
+                        if meta_rej is None:
+                            meta_rej = pp
+                        else:
+                            meta_rej = np.concatenate((meta_rej, pp))
 
-            self.write_meta(meta_rejected, add_meta, path)
+            self.write_meta(meta_rej, path)
 
-    def write_meta(self, meta_rej, add_meta={}, path=''):
+    def write_meta(self, meta_rej, path=''):
         """
         write meta data in hdf5 file
 
@@ -93,17 +105,13 @@ class Write_LightCurve:
           metadata of rejected LC (i.e. not simulated)
 
         """
+
         if meta_rej is not None and len(meta_rej) > 0:
+
             meta_rej = Table(meta_rej)
-            pp = ['bad{}_{}'.format(path, i) for i in range(len(meta_rej))]
+            pp = ['Rej{}_{}'.format(path, i) for i in range(len(meta_rej))]
             col = Column(pp, name='path')  # shape=(2,)
             meta_rej.add_column(col)
-            if add_meta:
-                for key, vals in add_meta.items():
-                    pp = [vals]*len(meta_rej)
-                    col = Column(pp, name=key)  # shape=(2,)
-                    meta_rej.add_column(col)
-
             self.Summary = vstack([self.Summary, meta_rej])
 
         self.Summary.meta["directory"] = self.outputDir
