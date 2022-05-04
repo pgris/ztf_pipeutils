@@ -76,24 +76,35 @@ class Write_LightCurve:
             inum = -1
             meta_rej = None
             for j, llc in enumerate(lc):
-                if llc.meta is not None:
-                    for i, lc_b in enumerate(llc):
-                        if len(lc_b) > 0:
-                            inum += 1
-                            simpath = '{}{}_{}'.format(
-                                self.path_prefix, path, inum)
-                            self.write_data(
-                                lc_b, meta[j][i], None, simpath)
-                    pp = None
-                    if meta_rejected is not None:
-                        pp = meta_rejected[j]
-                    if pp is not None:
-                        if meta_rej is None:
-                            meta_rej = pp
-                        else:
-                            meta_rej = np.concatenate((meta_rej, pp))
+                if llc is not None:
+                    if llc.meta is not None:
+                        self.write_lc(llc, path, inum, meta, j)
+                    meta_rej = self.concat_metarej(meta_rejected, j, meta_rej)
 
             self.write_meta(meta_rej, path)
+
+    def write_lc(self, llc, path, inum, meta, j):
+
+        for i, lc_b in enumerate(llc):
+            if len(lc_b) > 0:
+                inum += 1
+                simpath = '{}{}_{}'.format(
+                    self.path_prefix, path, inum)
+                self.write_data(
+                    lc_b, meta[j][i], None, simpath)
+
+    def concat_metarej(self, meta_rejected, j, meta_rej):
+
+        pp = None
+        if meta_rejected is not None:
+            pp = meta_rejected[j]
+        if pp is not None:
+            if meta_rej is None:
+                meta_rej = pp
+            else:
+                meta_rej = np.concatenate((meta_rej, pp))
+
+        return meta_rej
 
     def write_meta(self, meta_rej, path=''):
         """
