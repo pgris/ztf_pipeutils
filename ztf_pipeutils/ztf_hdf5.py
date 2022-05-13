@@ -49,7 +49,7 @@ class Write_LightCurve:
         self.file_data = h5py.File('{}'.format(self.data_file), 'w')
         self.file_meta = h5py.File('{}'.format(self.meta_file), 'w')
 
-    def write_data(self, lc, meta, meta_rejected, path='', serialize_meta=True):
+    def write_data(self, lc, meta, meta_rejected, path='', path_rej='', serialize_meta=True):
         """
         Parameters
         ----------
@@ -78,10 +78,10 @@ class Write_LightCurve:
             for j, llc in enumerate(lc):
                 if llc is not None:
                     if llc.meta is not None:
-                        self.write_lc(llc, path, inum, meta, j)
+                        self.write_lc(llc, path[j], inum, meta, j)
                     meta_rej = self.concat_metarej(meta_rejected, j, meta_rej)
 
-            self.write_meta(meta_rej, path)
+            self.write_meta(meta_rej, path_rej)
 
     def write_lc(self, llc, path, inum, meta, j):
 
@@ -106,7 +106,7 @@ class Write_LightCurve:
 
         return meta_rej
 
-    def write_meta(self, meta_rej, path=''):
+    def write_meta(self, meta_rej, path_rej=''):
         """
         write meta data in hdf5 file
 
@@ -120,7 +120,8 @@ class Write_LightCurve:
         if meta_rej is not None and len(meta_rej) > 0:
 
             meta_rej = Table(meta_rej)
-            pp = ['Rej{}_{}'.format(path, i) for i in range(len(meta_rej))]
+            pp = ['Rej{}_{}'.format(path_rej[i], i)
+                  for i in range(len(meta_rej))]
             col = Column(pp, name='path')  # shape=(2,)
             meta_rej.add_column(col)
             self.Summary = vstack([self.Summary, meta_rej])
