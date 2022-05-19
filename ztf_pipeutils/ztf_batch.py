@@ -68,8 +68,9 @@ class BatchIt:
 
         dict_batch = {}
         dict_batch['--account'] = 'ztf'
+        #dict_batch['--account'] = 'lsst'
         dict_batch['-L'] = 'sps'
-        dict_batch['--time'] = '10:00:00'
+        dict_batch['--time'] = '20:00:00'
         dict_batch['--mem'] = '10G'
         dict_batch['--output'] = self.logName
         #dict_batch['--cpus-per-task'] = str(nproc)
