@@ -262,7 +262,13 @@ class Read_LightCurve:
             Returns the reading of an .hdf5 file as an AstropyTable.
         """
 
-        return astropy.io.misc.hdf5.read_table_hdf5(self.file, path=path, character_as_bytes=False)
+        tab = Table()
+        try:
+            tab = astropy.io.misc.hdf5.read_table_hdf5(self.file, path=path, character_as_bytes=False)
+        except (OSError,KeyError):
+            pass
+        
+        return tab
 
 
 # In[257]:
