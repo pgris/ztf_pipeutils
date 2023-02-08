@@ -163,14 +163,17 @@ class Write_LightCurve:
             astropy.io.misc.hdf5.write_table_hdf5(
                 lc, self.file_data, path=path, overwrite=True, serialize_meta=serialize_meta)
         else:
-            #print('lc is not an astropy.table.table.Table type', type(lc))
+            #print('lc is not an astropy.table.table.Table type', type(lc), lc)
             inum = -1
             meta_rej = None
+            path_rej = []
             for j, llc in enumerate(lc):
                 if llc is not None:
                     if llc.meta is not None:
-                        self.write_lc(llc, path[j], inum, meta, j)
+                        path_j = '{}_{}'.format(path, j)
+                        self.write_lc(llc, path_j, inum, meta, j)
                     meta_rej = self.concat_metarej(meta_rejected, j, meta_rej)
+                    path_rej.append('{}'.format(j))
 
             self.write_meta(meta_rej, path_rej)
 
@@ -264,10 +267,11 @@ class Read_LightCurve:
 
         tab = Table()
         try:
-            tab = astropy.io.misc.hdf5.read_table_hdf5(self.file, path=path, character_as_bytes=False)
-        except (OSError,KeyError):
+            tab = astropy.io.misc.hdf5.read_table_hdf5(
+                self.file, path=path, character_as_bytes=False)
+        except (OSError, KeyError):
             pass
-        
+
         return tab
 
 
