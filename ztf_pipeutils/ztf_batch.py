@@ -70,12 +70,16 @@ class BatchIt:
         dict_batch['--account'] = 'ztf'
         #dict_batch['--account'] = 'lsst'
         dict_batch['-L'] = 'sps'
-        dict_batch['--time'] = '20:00:00'
-        dict_batch['--mem'] = '10G'
+        dict_batch['--time'] = '40:00:00'
+        dict_batch['--mem'] = '20G'
         dict_batch['--output'] = self.logName
         #dict_batch['--cpus-per-task'] = str(nproc)
         dict_batch['-n'] = 8
         dict_batch['--error'] = self.errlogName
+        options = []
+        options.append('--profile=task')
+        options.append('--acctg-freq=task=15')
+
 
         # fill the script
         script = open(self.scriptName, "w")
@@ -83,6 +87,8 @@ class BatchIt:
         script.write("#!/bin/env bash\n") 
         for key, vals in dict_batch.items():
             script.write("#SBATCH {} {} \n".format(key,vals))
+        for vv in options:
+            script.write("#SBATCH {} \n".format(vv))
 
         script.write(" cd " + self.cwd + "\n")
         script.write(" export MKL_NUM_THREADS=1 \n")
