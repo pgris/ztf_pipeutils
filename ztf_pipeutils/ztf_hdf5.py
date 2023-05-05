@@ -222,10 +222,12 @@ class Write_LightCurve:
 
         self.Summary.meta["directory"] = self.outputDir
         self.Summary.meta["file_name"] = self.data_name
-        print('meta data', self.Summary.meta, self.Summary)
+        # print('meta data', self.Summary.meta, self.Summary)
 
-        astropy.io.misc.hdf5.write_table_hdf5(self.Summary, self.file_meta, path='meta', append=True,
-                                              overwrite=True, serialize_meta=True)
+        astropy.io.misc.hdf5.write_table_hdf5(self.Summary, self.file_meta,
+                                              path='meta', append=True,
+                                              overwrite=True,
+                                              serialize_meta=True)
 
 
 class Read_LightCurve:
